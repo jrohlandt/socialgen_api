@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\PostController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -23,26 +24,24 @@ Route::get('/do-test', function() {
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-/*
-    2. Dashboard
-        o Display metrics: total requests made, total saved posts, date/time of last
-            generation, and list of recent saved posts (title and snippet).
-*/
-Route::get('/dashboard', function(Request $request) {
-    return [
-        'metrics' => [
-            'total_requests' => 140,
-            'total_saved_posts' => 25,
-            'last_generation_time' => '2026-02-20 21:57:00', 
-        ],
-        'saved_posts' => [
-            ['title' => 'Some title', 'content' => 'Watch out yall'],
-            ['title' => 'Some Other Title', 'content' => 'Watch out yall part 2'],
-        ]
-    ];
-});
+Route::middleware('auth:sanctum')->group(function() {
+    /*
+        2. Dashboard
+            o Display metrics: total requests made, total saved posts, date/time of last
+                generation, and list of recent saved posts (title and snippet).
+    */
+    Route::get('/dashboard', function(Request $request) {
+        $posts = $request->user()->posts;
 
-Route::prefix('/posts/')->middleware('auth:sanctum')->group(function() {
+        return [
+            'metrics' => [
+                'total_requests' => 140, // TODO
+                'total_saved_posts' => $posts->count(),
+                'last_generation_time' => $posts->last()->created_at, 
+            ],
+            'posts' => $posts
+        ];
+    });
 
     /*
         3. Content Generation
@@ -50,10 +49,11 @@ Route::prefix('/posts/')->middleware('auth:sanctum')->group(function() {
             o Request payload: { "topic": "<user-provided topic>" }
             o Response: { "options": [ { "title": "...", "content": "..." }, ... ] } (exactly 3 items)
     */
-    Route::post('/generate', function(Request $request) {
+    Route::post('/posts/generate', function(Request $request) {
         // 
         $topic = $request->input('topic');
-        // Generate
+
+        // TODO Generate
         $result = [
             'options' => [
                 ['title' => 'Post 1', 'content' => 'This is social media post 1 ' . $topic],
@@ -73,5 +73,18 @@ Route::prefix('/posts/')->middleware('auth:sanctum')->group(function() {
             o Update: PUT /api/posts/{id} edits title or content.
             o Delete: DELETE /api/posts/{id} removes a post.
     */
-    // Route::resource('/', PostController::class)->only('index', 'store', 'show', 'update', 'delete');
+    Route::resource('posts', PostController::class)->only('index', 'store');
+
+    Route::get('/posts/{post}', [PostController::class, 'show'])
+        ->name('posts.show')
+        ->middleware('can:view,post');
+
+    Route::put('/posts/{post}', [PostController::class, 'update'])
+        ->name('posts.update')
+        ->middleware('can:update,post');
+
+    Route::delete('/posts/{post}', [PostController::class, 'destroy'])
+        ->name('posts.destroy')
+        ->middleware('can:delete,post');
 });    
+

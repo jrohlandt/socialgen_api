@@ -6,17 +6,17 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\UserLoginRequest;
 use App\Http\Requests\Auth\UserRegistrationRequest;
 use App\Models\User;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
-    public function login(UserLoginRequest $request) {
+    public function login(UserLoginRequest $request)
+    {
         $credentials = $request->validated();
 
-        if (!Auth::attempt($credentials)) {
+        if (! Auth::attempt($credentials)) {
             return response()->json([
-                'message' => 'Invalid credentials'
+                'message' => 'Invalid credentials',
             ], 401);
         }
 
@@ -29,7 +29,8 @@ class AuthController extends Controller
         ];
     }
 
-    public function register(UserRegistrationRequest $request) {
+    public function register(UserRegistrationRequest $request)
+    {
         $validated = $request->safe()->except(['password_confirmation']);
 
         $user = User::create($validated);

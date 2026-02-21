@@ -12,10 +12,11 @@ class Post extends Model
     //  id, user_id, title, content, timestamps
 
     protected $fillable = [
-        'id', 'user_id', 'title', 'content'
+        'id', 'user_id', 'title', 'content',
     ];
 
-    public function user() {
+    public function user()
+    {
         return $this->belongsTo(User::class);
     }
 }

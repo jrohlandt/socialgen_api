@@ -6,7 +6,6 @@ use App\Http\Requests\StorePostRequest;
 use App\Http\Requests\UpdatePostRequest;
 use App\Models\Post;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Http\Request;
 
 class PostController extends Controller
 {
@@ -24,7 +23,7 @@ class PostController extends Controller
     public function store(StorePostRequest $request)
     {
         $validated = $request->validated();
-        
+
         $post = $request->user()->posts()->create($validated);
 
         return response()->json(['post' => $post], 201);

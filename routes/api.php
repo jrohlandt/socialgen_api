@@ -9,13 +9,11 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
-
-Route::get('/do-test', function() {
+Route::get('/do-test', function () {
     return 'something';
 });
 
-
-/* 
+/*
     1. Registration & Profile
         o Users register with: name, email, password, brand_name, brand_description,
             and optional website.
@@ -24,22 +22,22 @@ Route::get('/do-test', function() {
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-Route::middleware('auth:sanctum')->group(function() {
+Route::middleware('auth:sanctum')->group(function () {
     /*
         2. Dashboard
             o Display metrics: total requests made, total saved posts, date/time of last
                 generation, and list of recent saved posts (title and snippet).
     */
-    Route::get('/dashboard', function(Request $request) {
+    Route::get('/dashboard', function (Request $request) {
         $posts = $request->user()->posts;
 
         return [
             'metrics' => [
                 'total_requests' => 140, // TODO
                 'total_saved_posts' => $posts->count(),
-                'last_generation_time' => $posts->last()->created_at, 
+                'last_generation_time' => $posts->last()->created_at,
             ],
-            'posts' => $posts
+            'posts' => $posts,
         ];
     });
 
@@ -49,22 +47,22 @@ Route::middleware('auth:sanctum')->group(function() {
             o Request payload: { "topic": "<user-provided topic>" }
             o Response: { "options": [ { "title": "...", "content": "..." }, ... ] } (exactly 3 items)
     */
-    Route::post('/posts/generate', function(Request $request) {
-        // 
+    Route::post('/posts/generate', function (Request $request) {
+        //
         $topic = $request->input('topic');
 
         // TODO Generate
         $result = [
             'options' => [
-                ['title' => 'Post 1', 'content' => 'This is social media post 1 ' . $topic],
-                ['title' => 'Post 2', 'content' => 'This is social media post 2 ' . $topic],
-                ['title' => 'Post 3', 'content' => 'This is social media post 3 ' . $topic],
-            ]
+                ['title' => 'Post 1', 'content' => 'This is social media post 1 '.$topic],
+                ['title' => 'Post 2', 'content' => 'This is social media post 2 '.$topic],
+                ['title' => 'Post 3', 'content' => 'This is social media post 3 '.$topic],
+            ],
         ];
-    
+
         return $result;
     });
-    
+
     /*
         4. Post Management
             o Create: POST /api/posts saves a chosen option { "title": "...", "content": "..." }.
@@ -86,5 +84,4 @@ Route::middleware('auth:sanctum')->group(function() {
     Route::delete('/posts/{post}', [PostController::class, 'destroy'])
         ->name('posts.destroy')
         ->middleware('can:delete,post');
-});    
-
+});

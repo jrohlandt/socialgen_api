@@ -5,16 +5,16 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StorePostRequest;
 use App\Http\Requests\UpdatePostRequest;
 use App\Models\Post;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
 
 class PostController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return Auth::user()->posts;
+        return $request->user()->posts;
     }
 
     /**
@@ -32,8 +32,12 @@ class PostController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Post $post)
+    public function show(Request $request, Post $post)
     {
+        if ($request->user()->cannot('view', $post)) {
+            abort(403);
+        }
+
         return ['post' => $post];
     }
 
@@ -42,19 +46,28 @@ class PostController extends Controller
      */
     public function update(UpdatePostRequest $request, Post $post)
     {
+        if ($request->user()->cannot('update', $post)) {
+            abort(403);
+        }
+
         $validated = $request->validated();
 
         $post->update($validated);
 
         return ['post' => $post];
-
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Post $post)
+    public function destroy(Request $request, Post $post)
     {
-        //
+        if ($request->user()->cannot('delete', $post)) {
+            abort(403);
+        }
+
+        $post->delete();
+
+        return response()->noContent();
     }
 }

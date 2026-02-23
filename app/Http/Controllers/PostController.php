@@ -6,6 +6,7 @@ use App\Http\Requests\StorePostRequest;
 use App\Http\Requests\UpdatePostRequest;
 use App\Models\Post;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 class PostController extends Controller
 {
@@ -14,7 +15,7 @@ class PostController extends Controller
      */
     public function index(Request $request)
     {
-        return $request->user()->posts;
+        return response()->json(['posts' => $request->user()->posts]);
     }
 
     /**
@@ -22,10 +23,7 @@ class PostController extends Controller
      */
     public function store(StorePostRequest $request)
     {
-        $validated = $request->validated();
-
-        $post = $request->user()->posts()->create($validated);
-
+        $post = $request->user()->posts()->create($request->validated());
         return response()->json(['post' => $post], 201);
     }
 
@@ -50,9 +48,7 @@ class PostController extends Controller
             abort(403);
         }
 
-        $validated = $request->validated();
-
-        $post->update($validated);
+        $post->update($request->validated());
 
         return ['post' => $post];
     }
@@ -69,5 +65,76 @@ class PostController extends Controller
         $post->delete();
 
         return response()->noContent();
+    }
+
+    public function generate(Request $request)
+    {
+        $topic = $request->input('topic');
+
+        $apiKey = config('services.openai.api_key');
+        $endpoint = 'https://api.openai.com/v1/responses';
+
+        $response = Http::withToken($apiKey)
+            ->post($endpoint, self::createBody($topic))
+            ->throw();
+
+        if ($response->failed()) {
+            // handle errors e.g. rate limits, invalid schema
+            return $response->json('error.message');
+        }
+
+        $content = $response->json('output.0.content.0.text');
+        $structuredOutput = json_decode($content, true);
+
+        return response()->json($structuredOutput, 201);
+    }
+
+    public static function createBody(string $topic)
+    {
+        $outputSchema = [
+            'type' => 'object',
+            'properties' => [
+                'suggestions' => [
+                    'type' => 'array',
+                    'items' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'title' => ['type' => 'string'],
+                            'content' => ['type' => 'string'],
+                        ],
+                        'required' => ['title', 'content'],
+                        'additionalProperties' => false,
+                    ]
+                ],
+            ],
+            'required' => ['suggestions'],
+            'additionalProperties' => false
+        ];
+
+        return [
+            'model' => 'gpt-4o-mini-2024-07-18', // gpt-5-nano cheaper but not as good as gpt-4o-mini
+            'input' => [
+                [
+                    'role' => 'system',
+                    'content' => 'You are an expert social media content writer.',
+                ],
+                [
+                    'role' => 'user',
+                    'content' => 'You will be provided with the topic for a social media post
+                        and you should generate exactly 3 social media posts based on that topic and return only the title and the content of each post
+                        nothing else.
+                        The topic for the social media post is: ' . $topic,
+                ]
+            ],
+            'text' => [
+                'format' => [
+                    'type' => 'json_schema',
+                    'name' => 'social_media_post_suggestions',
+                    'schema' => $outputSchema,
+                    'strict' => true
+                ]
+            ]
+        ];
+
     }
 }

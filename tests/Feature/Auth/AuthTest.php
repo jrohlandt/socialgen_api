@@ -10,9 +10,6 @@ class AuthTest extends TestCase
 {
     use RefreshDatabase;
 
-    /**
-     * A basic feature test example.
-     */
     public function test_successful_user_registration_returns_token_and_user(): void
     {
         $registrationData = [
@@ -38,13 +35,20 @@ class AuthTest extends TestCase
 
     public function test_successful_user_login_returns_token_and_user(): void
     {
-        $user = User::factory()->create([
-            'password' => 'password',
-        ]);
+        $user = User::factory()->create(['password' => 'password']);
 
         $response = $this->postJson('/api/login', ['email' => $user->email, 'password' => 'password']);
 
         $response->assertStatus(200);
         $this->assertNotEmpty($response['token']);
+    }
+
+    public function test_unsuccessful_user_login_returns_401_status(): void
+    {
+        $user = User::factory()->create(['password' => 'password']);
+
+        $response = $this->postJson('/api/login', ['email' => $user->email, 'password' => 'wrongpassword']);
+
+        $response->assertStatus(401);
     }
 }

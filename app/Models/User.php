@@ -56,4 +56,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Post::class);
     }
+
+    public function openAILogs()
+    {
+        return $this->hasMany(OpenAILog::class);
+    }
 }

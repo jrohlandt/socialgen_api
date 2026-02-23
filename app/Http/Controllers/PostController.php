@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\Post\GeneratePostSuggestionsRequest;
+use App\Http\Requests\Post\GeneratePostSuggestionsRequest as SuggestionsRequest;
 use App\Http\Requests\Post\StorePostRequest;
 use App\Http\Requests\Post\UpdatePostRequest;
 use App\Models\Post;
@@ -73,9 +73,9 @@ class PostController extends Controller
     /**
      * Generate social media post suggestions.
      */
-    public function generate(GeneratePostSuggestionsRequest $request, PostGenerationService $service): JsonResponse
+    public function generate(SuggestionsRequest $request, PostGenerationService $service): JsonResponse
     {
-        $service->generate($request->validated('topic'));
+        $service->generate($request->user()->id, $request->validated('topic'));
 
         if ($service->failed()) {
             return response()->json(['message' => $service->errorMessage], $service->statusCode);

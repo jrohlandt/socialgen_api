@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-// use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Client\Factory as Http;
+use App\Models\OpenAILog;
 
 class PostGenerationService
 {
@@ -16,10 +16,13 @@ class PostGenerationService
     public $statusCode;
     protected array $outputSchema;
     protected string $model = 'gpt-4o-mini-2024-07-18';
+    private OpenAILog $openAILog;
 
     public function __construct()
     {
         $this->http = new Http();
+        $this->openAILog = new OpenAILog();
+
         $this->apiKey = config('services.openai.api_key');
         $this->endpoint = 'https://api.openai.com/v1/responses';
         $this-> outputSchema = [
@@ -48,33 +51,11 @@ class PostGenerationService
                     'strict' => true
                 ]
             ];
-
     }
 
-    public function generate(string $topic): void
+    public function generate(int $userId, string $topic): void
     {
-        $this->response = $this->http->withToken($this->apiKey)
-            ->post($this->endpoint, $this->createBody($topic));
-
-        if ($this->response->failed()) {
-            // e.g. rate limits, invalid schema
-            $this->errorMessage = $this->response->json('error.message');
-            $this->statusCode = $this->response->status();
-            return;
-        }
-
-        $content = $this->response->json('output.0.content.0.text');
-        $this->posts = json_decode($content, true)['suggestions'];
-    }
-
-    public function failed(): bool
-    {
-        return $this->response->failed();
-    }
-
-    protected function createBody(string $topic): array
-    {
-        return [
+        $body = [
             'model' => $this->model,
             'input' => [
                 [
@@ -92,5 +73,34 @@ class PostGenerationService
             'text' => $this->outputSchema,
         ];
 
+        $this->response = $this->http->withToken($this->apiKey)->post($this->endpoint, $body);
+
+        if ($this->response->failed()) {
+            // e.g. rate limits, invalid schema
+            $this->errorMessage = $this->response->json('error.message');
+            $this->statusCode = $this->response->status();
+            return;
+        }
+
+        $content = $this->response->json('output.0.content.0.text');
+        $this->posts = json_decode($content, true)['suggestions'];
+
+        $this->createOpenAILog($userId, $body, $content);
+    }
+
+    public function failed(): bool
+    {
+        return $this->response->failed();
+    }
+
+    private function createOpenAILog(int $userId, $input, $output)
+    {
+        $this->openAILog->create([
+            'user_id' => $userId,
+            'model' => $this->model,
+            'input' => json_encode($input),
+            'output' => $output,
+            'token_usage' => $this->response->json('usage.total_tokens'),
+        ]);
     }
 }

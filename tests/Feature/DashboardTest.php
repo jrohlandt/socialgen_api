@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\OpenAILog;
 use App\Models\Post;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -18,11 +19,9 @@ class DashboardTest extends TestCase
     {
         $user = User::factory()->createOne();
         $token = $user->createToken('test-token')->plainTextToken;
-
         $posts = Post::factory(10)->create(['user_id' => $user->id]);
+        $logs = OpenAILog::factory(20)->create(['user_id' => $user->id]);
 
-
-        // dd($posts);
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $token,
             'Accept' => 'application/json',
@@ -31,9 +30,10 @@ class DashboardTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertJson([
-            'total_requests' => 140,
+            'total_requests' => $logs->count(),
             'total_saved_posts' => $posts->count(),
             'last_generation_time' => $posts->last()->created_at->toJson(),
+            'token_usage' => $logs->sum('token_usage'),
             // 'posts' => $posts, // no need to assert each post, the above assertions is enough
         ]);
     }

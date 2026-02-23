@@ -13,6 +13,22 @@ class PostTest extends TestCase
 {
     use RefreshDatabase;
 
+    // protected User $user;
+    // protected User $user2;
+    // protected string $authToken;
+    // protected $posts;
+
+    // protected function setUp(): void
+    // {
+    //     parent::setUp();
+    //     $this->user = User::factory()->createOne();
+    //     $this->authToken = $this->user->createToken('test-token')->plainTextToken;
+    //     $this->user2 = User::factory()->createOne();
+    //     $this->authToken = $this->user2->createToken('test-token')->plainTextToken;
+    //     $this->posts = Post::factory(10)->create(['user_id' => $this->user->id]);
+
+    // }
+
     public function test_can_list_posts(): void
     {
         $user = User::factory()->createOne();
@@ -133,18 +149,17 @@ class PostTest extends TestCase
         $response->assertForbidden();
     }
 
-    // public function test_user_can_generate_post_suggestions_from_topic(): void
-    // {
-    //     $user = User::factory()->createOne();
-    //     $token = $user->createToken('test-token')->plainTextToken;
+    public function test_user_can_generate_post_suggestions_from_topic(): void
+    {
+        $user = User::factory()->createOne();
+        $token = $user->createToken('test-token')->plainTextToken;
 
-    //     $response = $this->withToken($token)->postJson(
-    //         'api/posts/generate',
-    //         ['topic' => 'Ice cream at the beach']
-    //     );
+        $response = $this->withToken($token)->postJson(
+            'api/posts/generate',
+            ['topic' => 'Ice cream at the beach']
+        );
 
-    //     $response->assertCreated();
-    //     // $this->assertEquals(3, count($response->json()));
-    //     dd($response);
-    // }
+        $response->assertCreated();
+        $this->assertEquals(3, count($response->json('options')));
+    }
 }

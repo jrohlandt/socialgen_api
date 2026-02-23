@@ -6,15 +6,19 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\UserLoginRequest;
 use App\Http\Requests\Auth\UserRegistrationRequest;
 use App\Models\User;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Contracts\Auth\Factory as Auth;
 
 class AuthController extends Controller
 {
+    public function __construct(protected Auth $auth)
+    {
+    }
+
     public function login(UserLoginRequest $request)
     {
         $credentials = $request->validated();
 
-        if (! Auth::attempt($credentials)) {
+        if (! $this->auth->guard()->attempt($credentials)) {
             return response()->json([
                 'message' => 'Invalid credentials',
             ], 401);

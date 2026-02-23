@@ -22,14 +22,15 @@ class UserTest extends TestCase
         ->getJson('/api/user');
 
         $response->assertStatus(200);
-        $response->assertJson(['email' => $user->email]);
+        $response->assertJsonPath('user.email', $user->email);
     }
 
     public function test_user_endpoint_does_not_return_user_when_no_auth_token_is_provided(): void
     {
         // Make sure there is a valid user in the db
         $user = User::factory()->createOne();
-        $dontUseToken = $user->createToken('test-token')->plainTextToken;
+        // Not using token but creating it anyway.
+        $user->createToken('test-token')->plainTextToken;
 
         // Purposely exclude the Authorization bearer token
         $response = $this->withHeaders(['Accept' => 'application/json'])->getJson('/api/user');

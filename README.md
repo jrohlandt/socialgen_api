@@ -1,59 +1,569 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# SocialGen API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+## Project Setup Guide
 
-## About Laravel
+1. **Start the Docker containers:**
+    ```bash
+    docker compose up -d
+    ```
+2. **Install Composer depencies:**
+    ```bash
+    // Run install locally
+    composer install
+    // Or run in container
+    docker compose exec php composer install
+    ```
+3. **Laravel Config:**
+    1. Copy and rename .env.example and rename to .env
+    2. In .env populate the OPENAI_API_KEY (at bottom of file)
+    3. Generate app secret
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+    ```bash
+    docker compose exec php php artisan key:generate
+    ```
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+    4. Run migrations and seed database
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+    ```bash
+    docker compose exec php php artisan migrate --seed
+    ```
 
-## Learning Laravel
+    5. Run automated tests
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+    ```bash
+    docker compose exec php php artisan test
+    ```
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+---
 
-## Laravel Sponsors
+# SocialGen API Documentation
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+Base URL: `http://localhost:8009`
 
-### Premium Partners
+All authenticated endpoints require a Bearer token in the Authorization header:
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+```
+Authorization: Bearer <your_token>
+```
 
-## Contributing
+Content-Type: `application/json`
+Accept: `application/json`
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+---
 
-## Code of Conduct
+## Authentication
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### 1. Register User
 
-## Security Vulnerabilities
+**Endpoint:** `POST /api/register`
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Register a new user account.
 
-## License
+| Parameter             | Type   | Required | Description                        |
+| --------------------- | ------ | -------- | ---------------------------------- |
+| name                  | string | Yes      | User's name (max 100 chars)        |
+| email                 | string | Yes      | Valid email address                |
+| password              | string | Yes      | Password (requires confirmation)   |
+| password_confirmation | string | Yes      | Must match password                |
+| brand_name            | string | Yes      | Brand name (max 100 chars)         |
+| brand_description     | string | Yes      | Brand description (max 1000 chars) |
+| website               | string | No       | Website URL (max 1000 chars)       |
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+**Example Request:**
+
+```bash
+curl -X POST http://localhost:8009/api/register \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "name": "John Doe",
+    "email": "john@example.com",
+    "password": "password123",
+    "password_confirmation": "password123",
+    "brand_name": "My Brand",
+    "brand_description": "We make awesome things",
+    "website": "https://mybrand.com"
+  }'
+```
+
+**Example Response (201):**
+
+```json
+{
+    "token": "1|abc123def456...",
+    "user": {
+        "id": 1,
+        "name": "John Doe",
+        "email": "john@example.com",
+        "brand_name": "My Brand",
+        "brand_description": "We make awesome things",
+        "website": "https://mybrand.com",
+        "created_at": "2024-01-15T10:30:00.000000Z",
+        "updated_at": "2024-01-15T10:30:00.000000Z"
+    }
+}
+```
+
+---
+
+### 2. Login User
+
+**Endpoint:** `POST /api/login`
+
+Authenticate and receive an API token.
+
+| Parameter | Type   | Required | Description         |
+| --------- | ------ | -------- | ------------------- |
+| email     | string | Yes      | Valid email address |
+| password  | string | Yes      | User's password     |
+
+**Example Request:**
+
+```bash
+curl -X POST http://localhost:8009/api/login \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "email": "john@example.com",
+    "password": "password123"
+  }'
+```
+
+**Example Response (200):**
+
+```json
+{
+    "token": "1|abc123def456...",
+    "user": {
+        "id": 1,
+        "name": "John Doe",
+        "email": "john@example.com",
+        "brand_name": "My Brand",
+        "brand_description": "We make awesome things",
+        "website": "https://mybrand.com",
+        "created_at": "2024-01-15T10:30:00.000000Z",
+        "updated_at": "2024-01-15T10:30:00.000000Z"
+    }
+}
+```
+
+**Error Response (401):**
+
+```json
+{
+    "message": "Invalid credentials"
+}
+```
+
+---
+
+### 3. Get Current User
+
+**Endpoint:** `GET /api/user`
+
+Returns the authenticated user's profile information.
+
+**Example Request:**
+
+```bash
+curl -X GET http://localhost:8009/api/user \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+  -H "Accept: application/json"
+```
+
+**Example Response (200):**
+
+```json
+{
+    "user": {
+        "id": 1,
+        "name": "John Doe",
+        "email": "john@example.com",
+        "brand_name": "My Brand",
+        "brand_description": "We make awesome things",
+        "website": "https://mybrand.com",
+        "created_at": "2024-01-15T10:30:00.000000Z",
+        "updated_at": "2024-01-15T10:30:00.000000Z"
+    }
+}
+```
+
+---
+
+## Dashboard
+
+### 4. Get Dashboard
+
+**Endpoint:** `GET /api/dashboard`
+
+Returns user metrics including total requests, saved posts count, last generation time, and recent posts.
+
+**Example Request:**
+
+```bash
+curl -X GET http://localhost:8009/api/dashboard \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+  -H "Accept: application/json"
+```
+
+**Example Response (200):**
+
+```json
+{
+    "total_requests": 140,
+    "total_saved_posts": 5,
+    "last_generation_time": "2024-01-15T14:30:00.000000Z",
+    "posts": [
+        {
+            "id": 1,
+            "user_id": 1,
+            "title": "My First Post",
+            "content": "This is the content of my first post",
+            "created_at": "2024-01-15T10:30:00.000000Z",
+            "updated_at": "2024-01-15T10:30:00.000000Z"
+        },
+        {
+            "id": 2,
+            "user_id": 1,
+            "title": "Another Post",
+            "content": "More content here",
+            "created_at": "2024-01-15T11:00:00.000000Z",
+            "updated_at": "2024-01-15T11:00:00.000000Z"
+        }
+    ]
+}
+```
+
+---
+
+## Post Management
+
+### 5. List All Posts
+
+**Endpoint:** `GET /api/posts`
+
+Returns all posts created by the authenticated user.
+
+**Example Request:**
+
+```bash
+curl -X GET http://localhost:8009/api/posts \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+  -H "Accept: application/json"
+```
+
+**Example Response (200):**
+
+```json
+{
+    "posts": [
+        {
+            "id": 1,
+            "user_id": 1,
+            "title": "My First Post",
+            "content": "This is the content of my first post",
+            "created_at": "2024-01-15T10:30:00.000000Z",
+            "updated_at": "2024-01-15T10:30:00.000000Z"
+        },
+        {
+            "id": 2,
+            "user_id": 1,
+            "title": "Another Post",
+            "content": "More content here",
+            "created_at": "2024-01-15T11:00:00.000000Z",
+            "updated_at": "2024-01-15T11:00:00.000000Z"
+        }
+    ]
+}
+```
+
+---
+
+### 6. Create Post
+
+**Endpoint:** `POST /api/posts`
+
+Save a generated post option to the database.
+
+| Parameter | Type   | Required | Description  |
+| --------- | ------ | -------- | ------------ |
+| title     | string | Yes      | Post title   |
+| content   | string | Yes      | Post content |
+
+**Example Request:**
+
+```bash
+curl -X POST http://localhost:8009/api/posts \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "title": "My New Post",
+    "content": "This is the content of my new post"
+  }'
+```
+
+**Example Response (201):**
+
+```json
+{
+    "post": {
+        "id": 3,
+        "user_id": 1,
+        "title": "My New Post",
+        "content": "This is the content of my new post",
+        "created_at": "2024-01-15T15:00:00.000000Z",
+        "updated_at": "2024-01-15T15:00:00.000000Z"
+    }
+}
+```
+
+---
+
+### 7. Get Single Post
+
+**Endpoint:** `GET /api/posts/{id}`
+
+Returns a specific post by ID.
+
+**Example Request:**
+
+```bash
+curl -X GET http://localhost:8009/api/posts/1 \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+  -H "Accept: application/json"
+```
+
+**Example Response (200):**
+
+```json
+{
+    "post": {
+        "id": 1,
+        "user_id": 1,
+        "title": "My First Post",
+        "content": "This is the content of my first post",
+        "created_at": "2024-01-15T10:30:00.000000Z",
+        "updated_at": "2024-01-15T10:30:00.000000Z"
+    }
+}
+```
+
+**Error Response (403):**
+
+```json
+{
+    "message": "Unauthorized"
+}
+```
+
+---
+
+### 8. Update Post
+
+**Endpoint:** `PUT /api/posts/{id}`
+
+Update an existing post's title and/or content.
+
+| Parameter | Type   | Required | Description  |
+| --------- | ------ | -------- | ------------ |
+| title     | string | Yes      | Post title   |
+| content   | string | Yes      | Post content |
+
+**Example Request:**
+
+```bash
+curl -X PUT http://localhost:8009/api/posts/1 \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "title": "Updated Title",
+    "content": "Updated content"
+  }'
+```
+
+**Example Response (200):**
+
+```json
+{
+    "post": {
+        "id": 1,
+        "user_id": 1,
+        "title": "Updated Title",
+        "content": "Updated content",
+        "created_at": "2024-01-15T10:30:00.000000Z",
+        "updated_at": "2024-01-15T16:00:00.000000Z"
+    }
+}
+```
+
+---
+
+### 9. Delete Post
+
+**Endpoint:** `DELETE /api/posts/{id}`
+
+Delete a specific post.
+
+**Example Request:**
+
+```bash
+curl -X DELETE http://localhost:8009/api/posts/1 \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+  -H "Accept: application/json"
+```
+
+**Example Response (204):**
+
+```
+(No content returned)
+```
+
+---
+
+## Content Generation
+
+### 10. Generate Post Suggestions
+
+**Endpoint:** `POST /api/posts/generate`
+
+Generate 3 social media post suggestions based on a topic using AI.
+
+| Parameter | Type   | Required | Description                            |
+| --------- | ------ | -------- | -------------------------------------- |
+| topic     | string | Yes      | The topic for the post (max 100 chars) |
+
+**Example Request:**
+
+```bash
+curl -X POST http://localhost:8009/api/posts/generate \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "topic": "Sustainability in business"
+  }'
+```
+
+**Example Response (201):**
+
+```json
+{
+    "options": [
+        {
+            "title": "Going Green: How Sustainability Drives Success",
+            "content": "Discover how embracing sustainability can boost your bottom line while saving the planet. #sustainability #business"
+        },
+        {
+            "title": "5 Simple Steps to a Greener Office",
+            "content": "Small changes make big impacts. Here are 5 easy ways to make your workplace more eco-friendly. #greenoffice #sustainability"
+        },
+        {
+            "title": "Why Customers Choose Sustainable Brands",
+            "content": "Studies show 73% of millennials prefer sustainable brands. Is your business ready? #sustainablebusiness #consumertrends"
+        }
+    ]
+}
+```
+
+**Error Response (rate limit or API error):**
+
+```json
+{
+    "message": "Rate limit exceeded. Please try again later."
+}
+```
+
+---
+
+## Testing Guide
+
+### Quick Start
+
+1. **Start the Laravel server:**
+
+    ```bash
+    docker compose up -d
+    ```
+
+2. **Register a new user** and copy the token from the response
+
+3. **Use the token** in all subsequent requests via the Authorization header
+
+### Complete Testing Flow
+
+```bash
+# 1. Register a new user
+curl -X POST http://localhost:8009/api/register \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "name": "Test User",
+    "email": "test@example.com",
+    "password": "password123",
+    "password_confirmation": "password123",
+    "brand_name": "Test Brand",
+    "brand_description": "A test brand description"
+  }'
+
+# Save the token from response, then use it in these commands:
+
+# 2. Get current user profile
+curl -X GET http://localhost:8009/api/user \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Accept: application/json"
+
+# 3. Get dashboard
+curl -X GET http://localhost:8009/api/dashboard \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Accept: application/json"
+
+# 4. Generate post suggestions
+curl -X POST http://localhost:8009/api/posts/generate \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{"topic": "Your topic here"}'
+
+# 5. Save a generated post
+curl -X POST http://localhost:8009/api/posts \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{"title": "Post Title", "content": "Post Content"}'
+
+# 6. List all posts
+curl -X GET http://localhost:8009/api/posts \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Accept: application/json"
+
+# 7. Get single post
+curl -X GET http://localhost:8009/api/posts/1 \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Accept: application/json"
+
+# 8. Update a post
+curl -X PUT http://localhost:8009/api/posts/1 \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{"title": "New Title", "content": "New Content"}'
+
+# 9. Delete a post
+curl -X DELETE http://localhost:8009/api/posts/1 \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Accept: application/json"
+```
+
+### Using environment variables for convenience:
+
+```bash
+# Save token to variable
+TOKEN="your_token_here"
+
+# Test protected endpoint
+curl -X GET http://localhost:8009/api/dashboard \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Accept: application/json"
+```

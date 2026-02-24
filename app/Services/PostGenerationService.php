@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Http\Client\Factory as Http;
 use App\Models\OpenAILog;
+use App\DTOs\PostSuggestionDTO;
 
 class PostGenerationService
 {
@@ -82,9 +83,9 @@ class PostGenerationService
         }
 
         $content = $this->response->json('output.0.content.0.text');
-        $this->posts = json_decode($content, true)['suggestions'];
-
         $this->createOpenAILog($userId, $body, $content);
+        $this->posts = PostSuggestionDTO::collection(json_decode($content, true));
+
     }
 
     public function failed(): bool

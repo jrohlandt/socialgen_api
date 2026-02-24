@@ -76,7 +76,6 @@ class PostGenerationService
         $this->response = $this->http->withToken($this->apiKey)->post($this->endpoint, $body);
 
         if ($this->response->failed()) {
-            // e.g. rate limits, invalid schema
             $this->errorMessage = $this->response->json('error.message');
             $this->statusCode = $this->response->status();
             return;

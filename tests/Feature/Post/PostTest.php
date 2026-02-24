@@ -13,22 +13,6 @@ class PostTest extends TestCase
 {
     use RefreshDatabase;
 
-    // protected User $user;
-    // protected User $user2;
-    // protected string $authToken;
-    // protected $posts;
-
-    // protected function setUp(): void
-    // {
-    //     parent::setUp();
-    //     $this->user = User::factory()->createOne();
-    //     $this->authToken = $this->user->createToken('test-token')->plainTextToken;
-    //     $this->user2 = User::factory()->createOne();
-    //     $this->authToken = $this->user2->createToken('test-token')->plainTextToken;
-    //     $this->posts = Post::factory(10)->create(['user_id' => $this->user->id]);
-
-    // }
-
     public function test_can_list_posts(): void
     {
         $user = User::factory()->createOne();

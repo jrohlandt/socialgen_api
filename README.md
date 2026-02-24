@@ -500,7 +500,7 @@ curl -X POST http://localhost:8009/api/register \
   -H "Accept: application/json" \
   -d '{
     "name": "Test User",
-    "email": "test@example.com",
+    "email": "test123@example.com",
     "password": "password123",
     "password_confirmation": "password123",
     "brand_name": "Test Brand",
@@ -514,17 +514,17 @@ curl -X GET http://localhost:8009/api/user \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Accept: application/json"
 
-# 3. Get dashboard
-curl -X GET http://localhost:8009/api/dashboard \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -H "Accept: application/json"
-
-# 4. Generate post suggestions
+# 3. Generate post suggestions
 curl -X POST http://localhost:8009/api/posts/generate \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
   -d '{"topic": "Your topic here"}'
+
+# 4. Get dashboard
+curl -X GET http://localhost:8009/api/dashboard \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Accept: application/json"
 
 # 5. Save a generated post
 curl -X POST http://localhost:8009/api/posts \

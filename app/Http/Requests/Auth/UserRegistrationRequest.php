@@ -23,12 +23,12 @@ class UserRegistrationRequest extends FormRequest
     {
         return [
             'name' => 'required|string|max:100',
-            'email' => 'required|email',
+            'email' => 'required|email|unique:users,email',
             'password' => 'required|confirmed',
             'password_confirmation' => 'required',
             'brand_name' => 'required|string|max:100',
             'brand_description' => 'required|string|max:1000',
-            'website' => 'required|string|max:1000|nullable',
+            'website' => 'string|max:1000|nullable',
         ];
     }
 }

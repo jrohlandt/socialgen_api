@@ -43,6 +43,7 @@ class AuthController extends Controller
         return response()->json([
             'token' => $token,
             'user' => $user,
+            'message' => 'Restration success!',
         ], 201);
     }
 }

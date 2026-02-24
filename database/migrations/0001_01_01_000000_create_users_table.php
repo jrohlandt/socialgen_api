@@ -18,7 +18,7 @@ return new class () extends Migration {
             $table->string('password');
             $table->string('brand_name');
             $table->text('brand_description');
-            $table->string('website');
+            $table->string('website')->default('');
             $table->rememberToken();
             $table->timestamps();
         });

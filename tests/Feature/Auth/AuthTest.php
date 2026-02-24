@@ -33,6 +33,22 @@ class AuthTest extends TestCase
         $response->assertJsonPath('user.website', $registrationData['website']);
     }
 
+    public function test_successful_user_can_register_without_website_url(): void
+    {
+        $registrationData = [
+            'name' => 'John',
+            'email' => 'john@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+            'brand_name' => 'John\'s Social Media Biz',
+            'brand_description' => 'Get ready for a social media revolution because JSM Biz is about to disrupt the social media space with A.I!',
+        ];
+
+        $response = $this->postJson('/api/register', $registrationData);
+
+        $response->assertStatus(201);
+    }
+
     public function test_successful_user_login_returns_token_and_user(): void
     {
         $user = User::factory()->create(['password' => 'password']);

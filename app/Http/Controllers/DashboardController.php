@@ -18,7 +18,7 @@ class DashboardController extends Controller
         return response()->json([
             'total_requests' => $logs->count(),
             'total_saved_posts' => $posts->count(),
-            'last_generation_time' => $posts->last()->created_at,
+            'last_generation_time' => $logs->last()->created_at,
             'token_usage' => $logs->sum('token_usage'),
             'posts' => $posts,
         ], 200);

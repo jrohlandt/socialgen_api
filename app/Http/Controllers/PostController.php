@@ -36,7 +36,7 @@ class PostController extends Controller
     public function show(Request $request, Post $post): JsonResponse
     {
         if ($request->user()->cannot('view', $post)) {
-            abort(403);
+            return response()->json(['message' => 'Forbidden'], 403);
         }
 
         return response()->json(['post' => $post], 200);
@@ -48,7 +48,7 @@ class PostController extends Controller
     public function update(UpdatePostRequest $request, Post $post): JsonResponse
     {
         if ($request->user()->cannot('update', $post)) {
-            abort(403);
+            return response()->json(['message' => 'Forbidden'], 403);
         }
 
         $post->update($request->validated());
@@ -59,10 +59,10 @@ class PostController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Request $request, Post $post): Response
+    public function destroy(Request $request, Post $post): Response|JsonResponse
     {
         if ($request->user()->cannot('delete', $post)) {
-            abort(403);
+            return response()->json(['message' => 'Forbidden'], 403);
         }
 
         $post->delete();

@@ -32,9 +32,30 @@ class DashboardTest extends TestCase
         $response->assertJson([
             'total_requests' => $logs->count(),
             'total_saved_posts' => $posts->count(),
-            'last_generation_time' => $posts->last()->created_at->toJson(),
+            'last_generation_time' => $logs->last()->created_at->toJson(),
             'token_usage' => $logs->sum('token_usage'),
             // 'posts' => $posts, // no need to assert each post, the above assertions is enough
+        ]);
+    }
+
+    public function test_dashboard_returns_post_metrics_even_if_there_are_no_saved_posts(): void
+    {
+        $user = User::factory()->createOne();
+        $token = $user->createToken('test-token')->plainTextToken;
+        $logs = OpenAILog::factory(20)->create(['user_id' => $user->id]);
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $token,
+            'Accept' => 'application/json',
+        ])
+        ->getJson('/api/dashboard');
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'total_requests' => $logs->count(),
+            'total_saved_posts' => 0,
+            'last_generation_time' => $logs->last()->created_at->toJson(),
+            'token_usage' => $logs->sum('token_usage'),
         ]);
     }
 }
